@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { nanoid } from "nanoid"
+import { getUserChurchId } from "@/lib/getUserChurch"
 
 export default function MembersPage() {
   const [fullName, setFullName] = useState("")
