@@ -1,4 +1,5 @@
 "use client"
+import { getCurrentUserProfile } from "@/lib/getCurrentUserProfile"
 import RequireAuth from "@/components/RequireAuth"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
