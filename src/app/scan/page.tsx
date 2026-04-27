@@ -1,55 +1,56 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import RequireAuth from "@/components/RequireAuth"
 
 export default function ScanPage() {
-  const [message, setMessage] = useState("Loading scanner...")
+  const [message, setMessage] = useState("Tap Start Scanner to begin.")
+  const [scannerStarted, setScannerStarted] = useState(false)
 
-  useEffect(() => {
-    let scanner: any
+  async function startScanner() {
+    try {
+      setMessage("Starting camera...")
 
-    async function startScanner() {
-      try {
-        const { Html5QrcodeScanner } = await import("html5-qrcode")
+      const { Html5Qrcode } = await import("html5-qrcode")
 
-        scanner = new Html5QrcodeScanner(
-          "reader",
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-          },
-          false
-        )
+      const html5QrCode = new Html5Qrcode("reader")
 
-        scanner.render(
-          (decodedText: string) => {
-            setMessage("QR scanned. Opening check-in...")
-            window.location.href = decodedText
-          },
-          (_error: string) => {}
-        )
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        async (decodedText: string) => {
+          setMessage("QR scanned. Opening check-in...")
 
-        setMessage("Ready to scan. Allow camera access.")
-      } catch (error: any) {
-        setMessage(`Scanner error: ${error.message}`)
-      }
+          await html5QrCode.stop()
+          window.location.href = decodedText
+        },
+        () => {}
+      )
+
+      setScannerStarted(true)
+      setMessage("Scanner ready. Point camera at QR code.")
+    } catch (error: any) {
+      setMessage(`Scanner error: ${error?.message || String(error)}`)
     }
-
-    startScanner()
-
-    return () => {
-      if (scanner) {
-        scanner.clear().catch(() => {})
-      }
-    }
-  }, [])
+  }
 
   return (
     <RequireAuth>
       <main className="p-6 space-y-4">
         <h1 className="text-3xl font-bold">Scan QR</h1>
-        <p className="text-sm">Allow camera access, then scan a member QR code.</p>
+        <p className="text-sm">Tap start, allow camera access, then scan a member QR code.</p>
+
+        {!scannerStarted && (
+          <button
+            onClick={startScanner}
+            className="bg-black text-white px-4 py-2 rounded-lg"
+          >
+            Start Scanner
+          </button>
+        )}
 
         <div id="reader" className="max-w-md" />
 
