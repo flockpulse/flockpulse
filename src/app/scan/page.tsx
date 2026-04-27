@@ -22,11 +22,11 @@ export default function ScanPage() {
       )
 
       scanner.render(
-        (decodedText) => {
+        (decodedText: string) => {
           setMessage("QR scanned. Opening check-in...")
           window.location.href = decodedText
         },
-        () => {}
+        (_error: string) => {}
       )
 
       setMessage("Ready to scan.")
