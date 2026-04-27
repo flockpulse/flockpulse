@@ -82,13 +82,16 @@ export default function SignupPage() {
 
     const checkoutData = await checkoutResponse.json()
 
-    if (checkoutData.url) {
-      window.location.href = checkoutData.url
-    } else {
-      setMessage("Account created, but payment checkout failed.")
-    }
-  }
+if (!checkoutResponse.ok) {
+  setMessage(checkoutData.error || "Payment checkout failed.")
+  return
+}
 
+if (checkoutData.url) {
+  window.location.href = checkoutData.url
+} else {
+  setMessage("No Stripe checkout URL returned.")
+}
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <form
