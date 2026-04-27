@@ -8,6 +8,8 @@ import RequireAuth from "@/components/RequireAuth"
 export default function ChurchesPage() {
   const [churches, setChurches] = useState<any[]>([])
   const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+const [pastorName, setPastorName] = useState("")
   const [phone, setPhone] = useState("")
   const [address, setAddress] = useState("")
   const [city, setCity] = useState("")
@@ -105,7 +107,20 @@ export default function ChurchesPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
+<input
+  className="w-full border rounded-lg p-3"
+  placeholder="Church Email"
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+/>
 
+<input
+  className="w-full border rounded-lg p-3"
+  placeholder="Pastor's Name"
+  value={pastorName}
+  onChange={(e) => setPastorName(e.target.value)}
+/>
           <input
             className="w-full border rounded-lg p-3"
             placeholder="Address"
