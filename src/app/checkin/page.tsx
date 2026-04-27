@@ -43,7 +43,7 @@ function CheckInContent() {
   }
 
   async function checkIn(value: string) {
-    const rawValue = value.trim()
+    const rawValue = value.trim().toUpperCase()
     const phoneValue = cleanPhone(rawValue)
     const serviceType = getCurrentServiceType()
 
@@ -55,7 +55,7 @@ function CheckInContent() {
     let { data: member } = await supabase
       .from("members")
       .select("*")
-      .eq("member_id", rawValue)
+      .ilike("member_id", rawValue)
       .eq("service_type", serviceType)
       .maybeSingle()
 

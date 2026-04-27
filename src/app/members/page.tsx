@@ -16,7 +16,7 @@ export default function MembersPage() {
 async function addMember(e: React.FormEvent) {
   e.preventDefault()
 
-  const memberId = `FP-${nanoid(6)}`
+  const memberId = `FP-${nanoid(6).toUpperCase()}`
 
   const { error } = await supabase.from("members").insert([
     {
