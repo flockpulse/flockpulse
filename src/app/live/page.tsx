@@ -1,4 +1,61 @@
-return (
+"use client"
+
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+import { useChurch } from "@/lib/churchContext"
+import RequireAuth from "@/components/RequireAuth"
+
+export default function LiveAttendancePage() {
+  const { selectedChurchId } = useChurch()
+  const [checkIns, setCheckIns] = useState<any[]>([])
+
+  async function loadCheckIns() {
+    if (!selectedChurchId) {
+      setCheckIns([])
+      return
+    }
+
+    const today = new Date().toISOString().split("T")[0]
+
+    const { data } = await supabase
+      .from("attendance")
+      .select("*, members(full_name, status)")
+      .eq("church_id", selectedChurchId)
+      .gte("check_in_time", `${today}T00:00:00`)
+      .lte("check_in_time", `${today}T23:59:59`)
+      .order("check_in_time", { ascending: false })
+
+    setCheckIns(data || [])
+  }
+
+  useEffect(() => {
+    loadCheckIns()
+
+    const channel = supabase
+      .channel("live-attendance")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "attendance" },
+        () => {
+          loadCheckIns()
+        }
+      )
+      .subscribe()
+
+    const interval = setInterval(() => {
+      loadCheckIns()
+    }, 10000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(interval)
+    }
+  }, [selectedChurchId])
+
+  const visitors = checkIns.filter((c) => c.members?.status === "Visitor").length
+  const members = checkIns.filter((c) => c.members?.status === "Member").length
+
+  return (
   <RequireAuth>
     <main className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -51,3 +108,4 @@ return (
     </main>
   </RequireAuth>
 )
+}
