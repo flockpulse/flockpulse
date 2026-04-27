@@ -52,28 +52,6 @@ export default function SignupPage() {
       return
     }
 
-      setMessage("Account created. Redirecting to payment...")
-
-  const checkoutResponse = await fetch("/api/create-checkout-session", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      churchId: churchData.id,
-      email,
-    }),
-  })
-
-  const checkoutData = await checkoutResponse.json()
-
-  if (checkoutData.url) {
-    window.location.href = checkoutData.url
-  } else {
-    setMessage("Account created, but payment checkout failed.")
-  }
-}
-
     const { error: userError } = await supabase.from("users").insert([
       {
         id: authData.user?.id,
@@ -91,24 +69,24 @@ export default function SignupPage() {
 
     setMessage("Account created. Redirecting to payment...")
 
-const checkoutResponse = await fetch("/api/create-checkout-session", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    churchId: churchData.id,
-    email,
-  }),
-})
+    const checkoutResponse = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        churchId: churchData.id,
+        email,
+      }),
+    })
 
-const checkoutData = await checkoutResponse.json()
+    const checkoutData = await checkoutResponse.json()
 
-if (checkoutData.url) {
-  window.location.href = checkoutData.url
-} else {
-  setMessage("Account created, but payment checkout failed.")
-}
+    if (checkoutData.url) {
+      window.location.href = checkoutData.url
+    } else {
+      setMessage("Account created, but payment checkout failed.")
+    }
   }
 
   return (
@@ -198,7 +176,7 @@ if (checkoutData.url) {
         </div>
 
         <button className="w-full rounded-lg p-3 bg-black text-white">
-          Create Account
+          Create Account + Continue to Payment
         </button>
 
         {message && <p className="text-sm font-medium">{message}</p>}
