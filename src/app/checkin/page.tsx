@@ -18,6 +18,26 @@ function CheckInContent() {
   const [message, setMessage] = useState("Waiting for scan...")
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
 
+    function getCurrentServiceType() {
+    const now = new Date()
+    const day = now.getDay()
+    const hour = now.getHours()
+
+    if (day === 0 && hour >= 8 && hour < 13) {
+      return "Sunday Service"
+    }
+
+    if (day === 3 && hour >= 18 && hour < 22) {
+      return "Bible Study"
+    }
+
+    if (day === 5 && hour >= 18 && hour < 22) {
+      return "Youth Service"
+    }
+
+    return "Special Event"
+  }
+
   function cleanPhone(value: string) {
     return value.replace(/\D/g, "")
   }
@@ -25,6 +45,7 @@ function CheckInContent() {
   async function checkIn(value: string) {
     const rawValue = value.trim()
     const phoneValue = cleanPhone(rawValue)
+    const serviceType = getCurrentServiceType()
 
     if (!rawValue || hasCheckedIn) return
 
@@ -35,6 +56,7 @@ function CheckInContent() {
       .from("members")
       .select("*")
       .eq("member_id", rawValue)
+      .eq("service_type", serviceType)
       .maybeSingle()
 
     if (!member) {
@@ -74,7 +96,7 @@ if (existing) {
       {
         church_id: member.church_id,
         member_id: member.id,
-        service_type: "Sunday Service",
+        service_type: serviceType,
         method: "QR/Manual",
       },
     ])
