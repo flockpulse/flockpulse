@@ -11,17 +11,37 @@ export default function MembersPage() {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("Visitor")
   const [successMessage, setSuccessMessage] = useState("")
+  const [profile, setProfile] = useState<any>(null)
+const [churches, setChurches] = useState<any[]>([])
+const [selectedChurchId, setSelectedChurchId] = useState("")
 
-  const churchId = "92b4af22-4273-47b3-a905-dd97b0c1289a"
+useEffect(() => {
+  async function loadAccess() {
+    const currentProfile = await getCurrentUserProfile()
+    setProfile(currentProfile)
+
+    if (currentProfile?.role === "superuser") {
+      const { data } = await supabase.from("churches").select("*")
+      setChurches(data || [])
+    } else {
+      setSelectedChurchId(currentProfile?.church_id || "")
+    }
+  }
+
+  loadAccess()
+}, [])
 
 async function addMember(e: React.FormEvent) {
   e.preventDefault()
 
   const memberId = `FP-${nanoid(6).toUpperCase()}`
-
+if (!selectedChurchId) {
+  setSuccessMessage("Please select a church first.")
+  return
+}
   const { error } = await supabase.from("members").insert([
     {
-      church_id: churchId,
+      church_id: selectedChurchId,
       full_name: fullName,
       email,
       phone,
@@ -45,6 +65,20 @@ async function addMember(e: React.FormEvent) {
     <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Members</h1>
+{profile?.role === "superuser" && (
+  <select
+    className="border rounded-lg p-3 w-full"
+    value={selectedChurchId}
+    onChange={(e) => setSelectedChurchId(e.target.value)}
+  >
+    <option value="">Select Church</option>
+    {churches.map((church) => (
+      <option key={church.id} value={church.id}>
+        {church.name}
+      </option>
+    ))}
+  </select>
+)}
 
       <form onSubmit={addMember} className="space-y-3 border p-4 rounded-lg">
         <input
