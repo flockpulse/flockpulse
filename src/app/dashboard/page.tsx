@@ -14,26 +14,8 @@ export default function DashboardPage() {
   const [totalVisitors, setTotalVisitors] = useState(0)
   const [totalMembers, setTotalMembers] = useState(0)
 
-  const [visitorWeek, setVisitorWeek] = useState(0)
-  const [visitorLastWeek, setVisitorLastWeek] = useState(0)
-  const [visitorMonth, setVisitorMonth] = useState(0)
-  const [visitorLastMonth, setVisitorLastMonth] = useState(0)
-  const [visitorYear, setVisitorYear] = useState(0)
-  const [visitorLastYear, setVisitorLastYear] = useState(0)
-
-  const [memberWeek, setMemberWeek] = useState(0)
-  const [memberLastWeek, setMemberLastWeek] = useState(0)
-  const [memberMonth, setMemberMonth] = useState(0)
-  const [memberLastMonth, setMemberLastMonth] = useState(0)
-  const [memberYear, setMemberYear] = useState(0)
-  const [memberLastYear, setMemberLastYear] = useState(0)
-
   const [weekCheckIns, setWeekCheckIns] = useState(0)
   const [lastWeekCheckIns, setLastWeekCheckIns] = useState(0)
-  const [monthCheckIns, setMonthCheckIns] = useState(0)
-  const [lastMonthCheckIns, setLastMonthCheckIns] = useState(0)
-  const [yearCheckIns, setYearCheckIns] = useState(0)
-  const [lastYearCheckIns, setLastYearCheckIns] = useState(0)
 
   function percentChange(current: number, previous: number) {
     if (previous === 0 && current === 0) return "0%"
@@ -67,6 +49,34 @@ export default function DashboardPage() {
     }
   }
 
+  async function openBillingPortal() {
+    if (!selectedChurchId) return
+
+    const { data } = await supabase
+      .from("churches")
+      .select("stripe_customer_id")
+      .eq("id", selectedChurchId)
+      .single()
+
+    if (!data?.stripe_customer_id) return
+
+    const response = await fetch("/api/create-portal-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerId: data.stripe_customer_id,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (result.url) {
+      window.location.href = result.url
+    }
+  }
+
   async function checkSubscription() {
     if (!selectedChurchId) {
       setCheckingSubscription(false)
@@ -83,85 +93,45 @@ export default function DashboardPage() {
     setCheckingSubscription(false)
   }
 
-  async function countPeople(status: string, start?: Date, end?: Date) {
-    if (!selectedChurchId) return 0
-
-    let query = supabase
-      .from("members")
-      .select("*", { count: "exact", head: true })
-      .eq("church_id", selectedChurchId)
-      .eq("status", status)
-
-    if (start && end) {
-      query = query
-        .gte("created_at", start.toISOString())
-        .lt("created_at", end.toISOString())
-    }
-
-    const { count } = await query
-    return count || 0
-  }
-
-  async function countAttendance(start: Date, end: Date) {
-    if (!selectedChurchId) return 0
-
-    const { count } = await supabase
-      .from("attendance")
-      .select("*", { count: "exact", head: true })
-      .eq("church_id", selectedChurchId)
-      .gte("check_in_time", start.toISOString())
-      .lt("check_in_time", end.toISOString())
-
-    return count || 0
-  }
-
   async function loadDashboard() {
     if (!selectedChurchId) return
 
     const now = new Date()
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startWeek = new Date()
+    startWeek.setDate(now.getDate() - now.getDay())
 
-    const startWeek = new Date(startToday)
-    startWeek.setDate(startToday.getDate() - startToday.getDay())
+    const lastWeek = new Date(startWeek)
+    lastWeek.setDate(startWeek.getDate() - 7)
 
-    const startLastWeek = new Date(startWeek)
-    startLastWeek.setDate(startWeek.getDate() - 7)
+    const { count: visitors } = await supabase
+      .from("members")
+      .select("*", { count: "exact", head: true })
+      .eq("church_id", selectedChurchId)
+      .eq("status", "Visitor")
 
-    const endLastWeek = new Date(startWeek)
+    const { count: members } = await supabase
+      .from("members")
+      .select("*", { count: "exact", head: true })
+      .eq("church_id", selectedChurchId)
+      .eq("status", "Member")
 
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const { count: thisWeek } = await supabase
+      .from("attendance")
+      .select("*", { count: "exact", head: true })
+      .eq("church_id", selectedChurchId)
+      .gte("check_in_time", startWeek.toISOString())
 
-    const startLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endLastMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const { count: lastWeekCount } = await supabase
+      .from("attendance")
+      .select("*", { count: "exact", head: true })
+      .eq("church_id", selectedChurchId)
+      .gte("check_in_time", lastWeek.toISOString())
+      .lt("check_in_time", startWeek.toISOString())
 
-    const startYear = new Date(now.getFullYear(), 0, 1)
-
-    const startLastYear = new Date(now.getFullYear() - 1, 0, 1)
-    const endLastYear = new Date(now.getFullYear(), 0, 1)
-
-    setTotalVisitors(await countPeople("Visitor"))
-    setTotalMembers(await countPeople("Member"))
-
-    setVisitorWeek(await countPeople("Visitor", startWeek, now))
-    setVisitorLastWeek(await countPeople("Visitor", startLastWeek, endLastWeek))
-    setVisitorMonth(await countPeople("Visitor", startMonth, now))
-    setVisitorLastMonth(await countPeople("Visitor", startLastMonth, endLastMonth))
-    setVisitorYear(await countPeople("Visitor", startYear, now))
-    setVisitorLastYear(await countPeople("Visitor", startLastYear, endLastYear))
-
-    setMemberWeek(await countPeople("Member", startWeek, now))
-    setMemberLastWeek(await countPeople("Member", startLastWeek, endLastWeek))
-    setMemberMonth(await countPeople("Member", startMonth, now))
-    setMemberLastMonth(await countPeople("Member", startLastMonth, endLastMonth))
-    setMemberYear(await countPeople("Member", startYear, now))
-    setMemberLastYear(await countPeople("Member", startLastYear, endLastYear))
-
-    setWeekCheckIns(await countAttendance(startWeek, now))
-    setLastWeekCheckIns(await countAttendance(startLastWeek, endLastWeek))
-    setMonthCheckIns(await countAttendance(startMonth, now))
-    setLastMonthCheckIns(await countAttendance(startLastMonth, endLastMonth))
-    setYearCheckIns(await countAttendance(startYear, now))
-    setLastYearCheckIns(await countAttendance(startLastYear, endLastYear))
+    setTotalVisitors(visitors || 0)
+    setTotalMembers(members || 0)
+    setWeekCheckIns(thisWeek || 0)
+    setLastWeekCheckIns(lastWeekCount || 0)
   }
 
   useEffect(() => {
@@ -187,9 +157,7 @@ export default function DashboardPage() {
     return (
       <RequireAuth>
         <main className="p-6">
-          <p className="text-sm font-medium">
-            Please select a church from the top dropdown.
-          </p>
+          <p>Please select a church from the dropdown.</p>
         </main>
       </RequireAuth>
     )
@@ -199,16 +167,12 @@ export default function DashboardPage() {
     return (
       <RequireAuth>
         <main className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-md w-full border rounded-xl p-6 text-center space-y-4">
-            <h1 className="text-2xl font-bold">Subscription Required</h1>
-
-            <p className="text-sm">
-              To continue using FlockPulse, please subscribe to your $49/month plan.
-            </p>
+          <div className="border rounded-xl p-6 text-center space-y-4">
+            <h1 className="text-xl font-bold">Subscription Required</h1>
 
             <button
               onClick={startCheckout}
-              className="w-full rounded-lg p-3 bg-black text-white"
+              className="bg-black text-white px-4 py-2 rounded-lg"
             >
               Subscribe for $49/month
             </button>
@@ -221,84 +185,29 @@ export default function DashboardPage() {
   return (
     <RequireAuth>
       <main className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
 
-        <section className="grid gap-4 md:grid-cols-2">
+          <button
+            onClick={openBillingPortal}
+            className="border rounded-lg px-4 py-2"
+          >
+            Manage Billing
+          </button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
           <Metric title="Total Visitors" value={totalVisitors} />
           <Metric title="Total Members" value={totalMembers} />
-        </section>
+        </div>
 
-        <section>
-          <h2 className="text-xl font-bold mb-3">Check-Ins</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Metric
-              title="This Week"
-              value={weekCheckIns}
-              change={percentChange(weekCheckIns, lastWeekCheckIns)}
-              label="vs last week"
-            />
-            <Metric
-              title="This Month"
-              value={monthCheckIns}
-              change={percentChange(monthCheckIns, lastMonthCheckIns)}
-              label="vs last month"
-            />
-            <Metric
-              title="This Year"
-              value={yearCheckIns}
-              change={percentChange(yearCheckIns, lastYearCheckIns)}
-              label="vs last year"
-            />
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold mb-3">Visitors</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Metric
-              title="New Visitors This Week"
-              value={visitorWeek}
-              change={percentChange(visitorWeek, visitorLastWeek)}
-              label="vs last week"
-            />
-            <Metric
-              title="New Visitors This Month"
-              value={visitorMonth}
-              change={percentChange(visitorMonth, visitorLastMonth)}
-              label="vs last month"
-            />
-            <Metric
-              title="New Visitors This Year"
-              value={visitorYear}
-              change={percentChange(visitorYear, visitorLastYear)}
-              label="vs last year"
-            />
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold mb-3">Members</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Metric
-              title="New Members This Week"
-              value={memberWeek}
-              change={percentChange(memberWeek, memberLastWeek)}
-              label="vs last week"
-            />
-            <Metric
-              title="New Members This Month"
-              value={memberMonth}
-              change={percentChange(memberMonth, memberLastMonth)}
-              label="vs last month"
-            />
-            <Metric
-              title="New Members This Year"
-              value={memberYear}
-              change={percentChange(memberYear, memberLastYear)}
-              label="vs last year"
-            />
-          </div>
-        </section>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Metric
+            title="This Week Check-Ins"
+            value={weekCheckIns}
+            change={percentChange(weekCheckIns, lastWeekCheckIns)}
+          />
+        </div>
       </main>
     </RequireAuth>
   )
@@ -308,22 +217,16 @@ function Metric({
   title,
   value,
   change,
-  label,
 }: {
   title: string
   value: number
   change?: string
-  label?: string
 }) {
   return (
     <div className="border rounded-xl p-6">
-      <p className="text-sm">{title}</p>
+      <p>{title}</p>
       <h2 className="text-3xl font-bold">{value}</h2>
-      {change && label && (
-        <p className="text-sm">
-          {change} {label}
-        </p>
-      )}
+      {change && <p>{change}</p>}
     </div>
   )
 }
