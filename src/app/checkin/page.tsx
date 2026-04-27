@@ -1,10 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 
 export default function CheckInPage() {
+  return (
+    <Suspense fallback={<main className="p-6">Loading check-in...</main>}>
+      <CheckInContent />
+    </Suspense>
+  )
+}
+
+function CheckInContent() {
   const searchParams = useSearchParams()
   const [input, setInput] = useState("")
   const [message, setMessage] = useState("Waiting for scan...")
@@ -30,18 +38,17 @@ export default function CheckInPage() {
       .maybeSingle()
 
     if (!member) {
-      const { data: members } = await supabase
-        .from("members")
-        .select("*")
+      const { data: members } = await supabase.from("members").select("*")
 
-      member = members?.find((m) => cleanPhone(m.phone || "") === phoneValue) || null
+      member =
+        members?.find((m) => cleanPhone(m.phone || "") === phoneValue) || null
     }
 
-if (!member) {
-  setMessage(`Member not found. You entered: ${rawValue} | Cleaned: ${phoneValue}`)
-  setHasCheckedIn(false)
-  return
-}
+    if (!member) {
+      setMessage(`Member not found. You entered: ${rawValue}`)
+      setHasCheckedIn(false)
+      return
+    }
 
     const { error: attendanceError } = await supabase.from("attendance").insert([
       {
