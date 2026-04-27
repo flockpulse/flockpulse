@@ -43,7 +43,7 @@ function CheckInContent() {
   }
 
   async function checkIn(value: string) {
-    const rawValue = value.trim().toUpperCase()
+    const rawValue = decodeURIComponent(value).trim().toUpperCase()
     const phoneValue = cleanPhone(rawValue)
     const serviceType = getCurrentServiceType()
 
@@ -52,13 +52,24 @@ function CheckInContent() {
     setHasCheckedIn(true)
     setMessage("Checking in...")
 
-    let { data: member } = await supabase
-      .from("members")
-      .select("*")
-      .ilike("member_id", rawValue)
-      .eq("service_type", serviceType)
-      .maybeSingle()
+let { data: member } = await supabase
+  .from("members")
+  .select("*")
+  .ilike("member_id", rawValue.trim())
+  .maybeSingle()
 
+if (!member) {
+  const { data: allMembers } = await supabase
+    .from("members")
+    .select("*")
+
+  member =
+    allMembers?.find(
+      (m) =>
+        String(m.member_id || "").trim().toUpperCase() ===
+        rawValue.trim().toUpperCase()
+    ) || null
+}
     if (!member) {
       const { data: members } = await supabase.from("members").select("*")
 
