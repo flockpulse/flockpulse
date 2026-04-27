@@ -27,17 +27,9 @@ function CheckInContent() {
     const day = now.getDay()
     const hour = now.getHours()
 
-    if (day === 0 && hour >= 8 && hour < 13) {
-      return "Sunday Service"
-    }
-
-    if (day === 3 && hour >= 18 && hour < 22) {
-      return "Bible Study"
-    }
-
-    if (day === 5 && hour >= 18 && hour < 22) {
-      return "Youth Service"
-    }
+    if (day === 0 && hour >= 8 && hour < 13) return "Sunday Service"
+    if (day === 3 && hour >= 18 && hour < 22) return "Bible Study"
+    if (day === 5 && hour >= 18 && hour < 22) return "Youth Service"
 
     return "Special Event"
   }
@@ -52,32 +44,20 @@ function CheckInContent() {
     setHasCheckedIn(true)
     setMessage("Checking in...")
 
-    let { data: member } = await supabase
-      .from("members")
-      .select("*")
-      .ilike("member_id", rawValue)
-      .maybeSingle()
+    const { data: allMembers } = await supabase.from("members").select("*")
 
-    if (!member) {
-      const { data: allMembers } = await supabase.from("members").select("*")
-
-      member =
-        allMembers?.find(
-          (m) =>
-            String(m.member_id || "").trim().toUpperCase() ===
-              rawValue.trim().toUpperCase() ||
-            cleanPhone(m.phone || "") === phoneValue
-        ) || null
-    }
+    const member =
+      allMembers?.find(
+        (m) =>
+          String(m.member_id || "").trim().toUpperCase() === rawValue ||
+          cleanPhone(m.phone || "") === phoneValue
+      ) || null
 
     if (!member) {
       setMessage(`Member not found. Scanned value: ${rawValue}`)
       setHasCheckedIn(false)
       return
     }
-
-    const isVisitor = member.status === "Visitor"
-    const isFirstVisit = (member.attendance_count || 0) === 0
 
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
@@ -115,6 +95,9 @@ function CheckInContent() {
       return
     }
 
+    const isVisitor = member.status === "Visitor"
+    const isFirstVisit = (member.attendance_count || 0) === 0
+
     await supabase
       .from("members")
       .update({
@@ -125,7 +108,7 @@ function CheckInContent() {
 
     if (isVisitor && isFirstVisit) {
       setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
-    } else if (isVisitor && !isFirstVisit) {
+    } else if (isVisitor) {
       setMessage(`Welcome back ${member.full_name}!`)
     } else {
       setMessage(`${member.full_name} checked in successfully!`)
