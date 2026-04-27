@@ -50,6 +50,26 @@ function CheckInContent() {
       return
     }
 
+    const todayStart = new Date()
+todayStart.setHours(0, 0, 0, 0)
+
+const todayEnd = new Date()
+todayEnd.setHours(23, 59, 59, 999)
+
+const { data: existing } = await supabase
+  .from("attendance")
+  .select("*")
+  .eq("member_id", member.id)
+  .gte("check_in_time", todayStart.toISOString())
+  .lte("check_in_time", todayEnd.toISOString())
+  .maybeSingle()
+
+if (existing) {
+  setMessage(`${member.full_name} already checked in today`)
+  setHasCheckedIn(false)
+  return
+}
+
     const { error: attendanceError } = await supabase.from("attendance").insert([
       {
         church_id: member.church_id,
