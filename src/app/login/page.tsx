@@ -10,12 +10,12 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: "http://localhost:3000/dashboard",
-      },
-    })
+ const { error } = await supabase.auth.signInWithOtp({
+  email,
+  options: {
+    emailRedirectTo: `${window.location.origin}/dashboard`,
+  },
+})
 
     setMessage(error ? error.message : "Check your email for the login link.")
   }
