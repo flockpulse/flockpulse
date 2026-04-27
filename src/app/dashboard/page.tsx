@@ -8,6 +8,9 @@ import { useChurch } from "@/lib/churchContext"
 export default function DashboardPage() {
   const { selectedChurchId } = useChurch()
 
+  const [subscriptionStatus, setSubscriptionStatus] = useState("")
+  const [checkingSubscription, setCheckingSubscription] = useState(true)
+
   const [totalVisitors, setTotalVisitors] = useState(0)
   const [totalMembers, setTotalMembers] = useState(0)
 
@@ -35,9 +38,49 @@ export default function DashboardPage() {
   function percentChange(current: number, previous: number) {
     if (previous === 0 && current === 0) return "0%"
     if (previous === 0) return "+100%"
-
     const change = ((current - previous) / previous) * 100
     return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`
+  }
+
+  async function startCheckout() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user || !selectedChurchId) return
+
+    const response = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        churchId: selectedChurchId,
+        email: user.email,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.url) {
+      window.location.href = data.url
+    }
+  }
+
+  async function checkSubscription() {
+    if (!selectedChurchId) {
+      setCheckingSubscription(false)
+      return
+    }
+
+    const { data } = await supabase
+      .from("churches")
+      .select("subscription_status")
+      .eq("id", selectedChurchId)
+      .single()
+
+    setSubscriptionStatus(data?.subscription_status || "unpaid")
+    setCheckingSubscription(false)
   }
 
   async function countPeople(status: string, start?: Date, end?: Date) {
@@ -122,19 +165,63 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    loadDashboard()
+    setCheckingSubscription(true)
+
+    if (selectedChurchId) {
+      checkSubscription()
+      loadDashboard()
+    } else {
+      setCheckingSubscription(false)
+    }
   }, [selectedChurchId])
+
+  if (checkingSubscription) {
+    return (
+      <RequireAuth>
+        <main className="p-6">Loading...</main>
+      </RequireAuth>
+    )
+  }
+
+  if (!selectedChurchId) {
+    return (
+      <RequireAuth>
+        <main className="p-6">
+          <p className="text-sm font-medium">
+            Please select a church from the top dropdown.
+          </p>
+        </main>
+      </RequireAuth>
+    )
+  }
+
+  if (subscriptionStatus !== "active") {
+    return (
+      <RequireAuth>
+        <main className="min-h-screen flex items-center justify-center p-6">
+          <div className="max-w-md w-full border rounded-xl p-6 text-center space-y-4">
+            <h1 className="text-2xl font-bold">Subscription Required</h1>
+
+            <p className="text-sm">
+              To continue using FlockPulse, please subscribe to your $49/month plan.
+            </p>
+
+            <button
+              onClick={startCheckout}
+              className="w-full rounded-lg p-3 bg-black text-white"
+            >
+              Subscribe for $49/month
+            </button>
+          </div>
+        </main>
+      </RequireAuth>
+    )
+  }
 
   return (
     <RequireAuth>
       <main className="p-6 space-y-6">
         <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
-
-        {!selectedChurchId && (
-          <p className="text-sm font-medium">
-            Please select a church from the top dropdown.
-          </p>
-        )}
 
         <section className="grid gap-4 md:grid-cols-2">
           <Metric title="Total Visitors" value={totalVisitors} />
