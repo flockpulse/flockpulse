@@ -43,12 +43,10 @@ export default function MemberProfilePage() {
       <div className="border rounded-xl p-6 space-y-4">
         <h2 className="text-xl font-bold">Check-In QR Code</h2>
 
-   <QRCodeCanvas
+<QRCodeCanvas
   value={`https://flockpulse.vercel.app/checkin?member=${member.member_id}`}
   size={180}
 />
-        
-
         <p className="text-sm">Scan this code at check-in.</p>
       </div>
     </main>
