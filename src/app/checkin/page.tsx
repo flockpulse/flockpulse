@@ -6,33 +6,35 @@ import { supabase } from "@/lib/supabase"
 
 export default function CheckInPage() {
   const searchParams = useSearchParams()
-
   const [input, setInput] = useState("")
   const [message, setMessage] = useState("Waiting for scan...")
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
 
+  function cleanPhone(value: string) {
+    return value.replace(/\D/g, "")
+  }
+
   async function checkIn(value: string) {
-    if (!value || hasCheckedIn) return
+    const rawValue = value.trim()
+    const phoneValue = cleanPhone(rawValue)
+
+    if (!rawValue || hasCheckedIn) return
 
     setHasCheckedIn(true)
     setMessage("Checking in...")
 
-    // Try member_id first
     let { data: member } = await supabase
       .from("members")
       .select("*")
-      .eq("member_id", value.trim())
-      .single()
+      .eq("member_id", rawValue)
+      .maybeSingle()
 
-    // If not found, try phone number
     if (!member) {
-      const { data: phoneMatch } = await supabase
+      const { data: members } = await supabase
         .from("members")
         .select("*")
-        .eq("phone", value.trim())
-        .single()
 
-      member = phoneMatch
+      member = members?.find((m) => cleanPhone(m.phone || "") === phoneValue) || null
     }
 
     if (!member) {
@@ -68,7 +70,6 @@ export default function CheckInPage() {
     setInput("")
   }
 
-  // Auto check-in from QR
   useEffect(() => {
     const idFromUrl = searchParams.get("member")
 
