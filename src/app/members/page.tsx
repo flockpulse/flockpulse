@@ -12,8 +12,6 @@ export default function MembersPage() {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState("Visitor")
   const [successMessage, setSuccessMessage] = useState("")
-  const [profile, setProfile] = useState<any>(null)
-const [churches, setChurches] = useState<any[]>([])
 const [selectedChurchId, setSelectedChurchId] = useState("")
 
 useEffect(() => {
@@ -66,20 +64,6 @@ if (!selectedChurchId) {
     <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Members</h1>
-{profile?.role === "superuser" && (
-  <select
-    className="border rounded-lg p-3 w-full"
-    value={selectedChurchId}
-    onChange={(e) => setSelectedChurchId(e.target.value)}
-  >
-    <option value="">Select Church</option>
-    {churches.map((church) => (
-      <option key={church.id} value={church.id}>
-        {church.name}
-      </option>
-    ))}
-  </select>
-)}
 
       <form onSubmit={addMember} className="space-y-3 border p-4 rounded-lg">
         <input

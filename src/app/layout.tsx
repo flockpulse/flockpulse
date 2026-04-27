@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import AuthHeader from "@/components/AuthHeader"
 import "./globals.css"
+import { ChurchProvider } from "@/lib/churchContext"
 
 export const metadata: Metadata = {
   title: "FlockPulse",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <ChurchProvider>
         <AuthHeader />
         {children}
+        </ChurchProvider>
       </body>
     </html>
   )
