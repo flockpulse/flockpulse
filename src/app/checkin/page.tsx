@@ -18,7 +18,11 @@ function CheckInContent() {
   const [message, setMessage] = useState("Waiting for scan...")
   const [hasCheckedIn, setHasCheckedIn] = useState(false)
 
-    function getCurrentServiceType() {
+  function cleanPhone(value: string) {
+    return value.replace(/\D/g, "")
+  }
+
+  function getCurrentServiceType() {
     const now = new Date()
     const day = now.getDay()
     const hour = now.getHours()
@@ -38,10 +42,6 @@ function CheckInContent() {
     return "Special Event"
   }
 
-  function cleanPhone(value: string) {
-    return value.replace(/\D/g, "")
-  }
-
   async function checkIn(value: string) {
     const rawValue = decodeURIComponent(value).trim().toUpperCase()
     const phoneValue = cleanPhone(rawValue)
@@ -52,29 +52,22 @@ function CheckInContent() {
     setHasCheckedIn(true)
     setMessage("Checking in...")
 
-let { data: member } = await supabase
-  .from("members")
-  .select("*")
-  .ilike("member_id", rawValue.trim())
-  .maybeSingle()
+    let { data: member } = await supabase
+      .from("members")
+      .select("*")
+      .ilike("member_id", rawValue)
+      .maybeSingle()
 
-if (!member) {
-  const { data: allMembers } = await supabase
-    .from("members")
-    .select("*")
-
-  member =
-    allMembers?.find(
-      (m) =>
-        String(m.member_id || "").trim().toUpperCase() ===
-        rawValue.trim().toUpperCase()
-    ) || null
-}
     if (!member) {
-      const { data: members } = await supabase.from("members").select("*")
+      const { data: allMembers } = await supabase.from("members").select("*")
 
       member =
-        members?.find((m) => cleanPhone(m.phone || "") === phoneValue) || null
+        allMembers?.find(
+          (m) =>
+            String(m.member_id || "").trim().toUpperCase() ===
+              rawValue.trim().toUpperCase() ||
+            cleanPhone(m.phone || "") === phoneValue
+        ) || null
     }
 
     if (!member) {
@@ -82,27 +75,30 @@ if (!member) {
       setHasCheckedIn(false)
       return
     }
+
     const isVisitor = member.status === "Visitor"
-const isFirstVisit = (member.attendance_count || 0) === 0
+    const isFirstVisit = (member.attendance_count || 0) === 0
+
     const todayStart = new Date()
-todayStart.setHours(0, 0, 0, 0)
+    todayStart.setHours(0, 0, 0, 0)
 
-const todayEnd = new Date()
-todayEnd.setHours(23, 59, 59, 999)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
 
-const { data: existing } = await supabase
-  .from("attendance")
-  .select("*")
-  .eq("member_id", member.id)
-  .gte("check_in_time", todayStart.toISOString())
-  .lte("check_in_time", todayEnd.toISOString())
-  .maybeSingle()
+    const { data: existing } = await supabase
+      .from("attendance")
+      .select("*")
+      .eq("member_id", member.id)
+      .eq("service_type", serviceType)
+      .gte("check_in_time", todayStart.toISOString())
+      .lte("check_in_time", todayEnd.toISOString())
+      .maybeSingle()
 
-if (existing) {
-  setMessage(`${member.full_name} already checked in today`)
-  setHasCheckedIn(false)
-  return
-}
+    if (existing) {
+      setMessage(`${member.full_name} already checked in for ${serviceType} today`)
+      setHasCheckedIn(false)
+      return
+    }
 
     const { error: attendanceError } = await supabase.from("attendance").insert([
       {
@@ -119,49 +115,25 @@ if (existing) {
       return
     }
 
-await supabase
-  .from("members")
-  .update({
-    attendance_count: (member.attendance_count || 0) + 1,
-    last_attendance: new Date().toISOString(),
-  })
-  .eq("id", member.id)
+    await supabase
+      .from("members")
+      .update({
+        attendance_count: (member.attendance_count || 0) + 1,
+        last_attendance: new Date().toISOString(),
+      })
+      .eq("id", member.id)
 
-if (member.status === "Visitor" && (member.attendance_count || 0) === 0) {
-  const dueDate = new Date()
-  dueDate.setDate(dueDate.getDate() + 1)
+    if (isVisitor && isFirstVisit) {
+      setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
+    } else if (isVisitor && !isFirstVisit) {
+      setMessage(`Welcome back ${member.full_name}!`)
+    } else {
+      setMessage(`${member.full_name} checked in successfully!`)
+    }
 
-  await supabase.from("follow_ups").insert([
-    {
-      church_id: member.church_id,
-      member_id: member.id,
-      reason: "First-time visitor follow-up",
-      status: "Open",
-      due_date: dueDate.toISOString().split("T")[0],
-    },
-  ])
+    setInput("")
+  }
 
-if (isVisitor && isFirstVisit) {
-  setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
-} else if (isVisitor && !isFirstVisit) {
-  setMessage(`Welcome back ${member.full_name}!`)
-} else {
-  setMessage(`${member.full_name} checked in successfully!`)
-}
-
-if (isVisitor && isFirstVisit && member.phone) {
-  await fetch("/api/send-visitor-sms", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      phone: member.phone,
-      name: member.full_name,
-      churchName: "FlockPulse Demo Church",
-    }),
-  })
-}
   useEffect(() => {
     const idFromUrl = searchParams.get("member")
 
