@@ -37,11 +37,11 @@ export default function CheckInPage() {
       member = members?.find((m) => cleanPhone(m.phone || "") === phoneValue) || null
     }
 
-    if (!member) {
-      setMessage("Member not found.")
-      setHasCheckedIn(false)
-      return
-    }
+if (!member) {
+  setMessage(`Member not found. You entered: ${rawValue} | Cleaned: ${phoneValue}`)
+  setHasCheckedIn(false)
+  return
+}
 
     const { error: attendanceError } = await supabase.from("attendance").insert([
       {
