@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -107,6 +107,7 @@ export default function DashboardPage() {
   }, [])
 
   return (
+    <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
 
@@ -149,6 +150,7 @@ export default function DashboardPage() {
         </div>
       </section>
     </main>
+    </RequireAuth>
   )
 }
 

@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -132,6 +132,7 @@ function CheckInContent() {
   }
 
   return (
+    <RequireAuth>
     <main className="min-h-screen flex items-center justify-center p-6">
       <form
         onSubmit={handleManualCheckIn}
@@ -153,5 +154,6 @@ function CheckInContent() {
         {message && <p className="text-sm font-medium">{message}</p>}
       </form>
     </main>
+    </RequireAuth>
   )
 }

@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { nanoid } from "nanoid"
@@ -42,6 +42,7 @@ async function addMember(e: React.FormEvent) {
   setSuccessMessage("Member saved successfully!")
 }
   return (
+    <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Members</h1>
 
@@ -83,7 +84,7 @@ async function addMember(e: React.FormEvent) {
       {successMessage && (
   <p className="text-green-600 font-medium">{successMessage}</p>
 )}
-
     </main>
+    </RequireAuth>
   )
 }

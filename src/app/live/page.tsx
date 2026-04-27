@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -47,6 +47,7 @@ useEffect(() => {
   const members = checkIns.filter((c) => c.members?.status === "Member").length
 
   return (
+    <RequireAuth>
     <main className="min-h-screen p-8 space-y-8 bg-white text-black">
       <h1 className="text-5xl font-bold">Live Attendance</h1>
 
@@ -81,5 +82,6 @@ useEffect(() => {
         ))}
       </section>
     </main>
+    </RequireAuth>
   )
 }

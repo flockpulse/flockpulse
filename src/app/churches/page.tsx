@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -27,6 +27,7 @@ export default function ChurchesPage() {
   }
 
   return (
+    <RequireAuth>
     <main className="min-h-screen flex items-center justify-center p-6">
       <form
         onSubmit={addChurch}
@@ -49,5 +50,6 @@ export default function ChurchesPage() {
         {message && <p className="text-sm font-medium">{message}</p>}
       </form>
     </main>
+    </RequireAuth>
   )
 }

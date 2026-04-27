@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -29,6 +29,7 @@ export default function FollowUpsPage() {
   }, [])
 
   return (
+    <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Follow-Ups</h1>
 
@@ -54,5 +55,6 @@ export default function FollowUpsPage() {
         ))}
       </div>
     </main>
+    </RequireAuth>
   )
 }

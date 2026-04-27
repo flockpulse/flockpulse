@@ -1,5 +1,5 @@
 "use client"
-
+import RequireAuth from "@/components/RequireAuth"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -20,6 +20,7 @@ export default function DirectoryPage() {
   }, [])
 
   return (
+    <RequireAuth>
     <main className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Member Directory</h1>
 
@@ -38,5 +39,6 @@ export default function DirectoryPage() {
         ))}
       </div>
     </main>
+    </RequireAuth>
   )
 }
