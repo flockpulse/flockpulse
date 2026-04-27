@@ -67,7 +67,7 @@ function CheckInContent() {
     }
 
     if (!member) {
-      setMessage(`Member not found. You entered: ${rawValue}`)
+      setMessage(`Member not found. Scanned value: ${rawValue}`)
       setHasCheckedIn(false)
       return
     }
