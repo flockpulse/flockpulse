@@ -11,6 +11,7 @@ export default function HomePage() {
         <a className="border rounded-xl p-4" href="/checkin">Check In</a>
         <a className="border rounded-xl p-4" href="/directory">Directory</a>
         <a className="border rounded-xl p-4" href="/scan">Scan QR</a>
+        <a className="border rounded-xl p-4" href="/live">Live Attendance</a>
       </div>
     </main>
   )
