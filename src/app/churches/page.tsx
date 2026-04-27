@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { getCurrentUserProfile } from "@/lib/getCurrentUserProfile"
 import RequireAuth from "@/components/RequireAuth"
-import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 export default function ChurchesPage() {
@@ -44,7 +43,7 @@ export default function ChurchesPage() {
     setChurchName("")
     setMessage("Church added successfully!")
   }
-  
+
   if (checkingRole) {
     return <main className="p-6">Checking permissions...</main>
   }
