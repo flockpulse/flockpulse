@@ -10,26 +10,30 @@ export default function ScanPage() {
     let scanner: any
 
     async function startScanner() {
-      const { Html5QrcodeScanner } = await import("html5-qrcode")
+      try {
+        const { Html5QrcodeScanner } = await import("html5-qrcode")
 
-      scanner = new Html5QrcodeScanner(
-        "reader",
-        {
-          fps: 10,
-          qrbox: 250,
-        },
-        false
-      )
+        scanner = new Html5QrcodeScanner(
+          "reader",
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          false
+        )
 
-      scanner.render(
-        (decodedText: string) => {
-          setMessage("QR scanned. Opening check-in...")
-          window.location.href = decodedText
-        },
-        (_error: string) => {}
-      )
+        scanner.render(
+          (decodedText: string) => {
+            setMessage("QR scanned. Opening check-in...")
+            window.location.href = decodedText
+          },
+          (_error: string) => {}
+        )
 
-      setMessage("Ready to scan.")
+        setMessage("Ready to scan. Allow camera access.")
+      } catch (error: any) {
+        setMessage(`Scanner error: ${error.message}`)
+      }
     }
 
     startScanner()
