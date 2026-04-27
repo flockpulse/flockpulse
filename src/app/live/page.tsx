@@ -19,24 +19,29 @@ export default function LiveAttendancePage() {
     setCheckIns(data || [])
   }
 
-  useEffect(() => {
+useEffect(() => {
+  loadCheckIns()
+
+  const channel = supabase
+    .channel("live-attendance")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "attendance" },
+      () => {
+        loadCheckIns()
+      }
+    )
+    .subscribe()
+
+  const interval = setInterval(() => {
     loadCheckIns()
+  }, 10000)
 
-    const channel = supabase
-      .channel("live-attendance")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "attendance" },
-        () => {
-          loadCheckIns()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
+  return () => {
+    supabase.removeChannel(channel)
+    clearInterval(interval)
+  }
+}, [])
 
   const visitors = checkIns.filter((c) => c.members?.status === "Visitor").length
   const members = checkIns.filter((c) => c.members?.status === "Member").length
