@@ -120,7 +120,22 @@ function CheckInContent() {
       .eq("id", member.id)
 
     if (isVisitor && isFirstVisit) {
-      setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + 1)
+
+      await supabase.from("follow_ups").insert([
+        {
+          church_id: selectedChurchId,
+          member_id: member.id,
+          reason: "First-time visitor follow-up",
+          status: "Open",
+          due_date: dueDate.toISOString().split("T")[0],
+        },
+      ])
+
+      setMessage(
+        `Welcome ${member.full_name}! First-time visitor checked in. Follow-up created.`
+      )
     } else if (isVisitor) {
       setMessage(`Welcome back ${member.full_name}!`)
     } else {
