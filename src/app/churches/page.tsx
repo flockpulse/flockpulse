@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase"
 export default function ChurchesPage() {
   const [churchName, setChurchName] = useState("")
   const [message, setMessage] = useState("")
+  const [checkingRole, setCheckingRole] = useState(true)
   const [debug, setDebug] = useState("")
 
     useEffect(() => {
