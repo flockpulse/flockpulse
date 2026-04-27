@@ -1,4 +1,7 @@
 "use client"
+
+import { useEffect, useState } from "react"
+import { getCurrentUserProfile } from "@/lib/getCurrentUserProfile"
 import RequireAuth from "@/components/RequireAuth"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
@@ -6,6 +9,22 @@ import { supabase } from "@/lib/supabase"
 export default function ChurchesPage() {
   const [churchName, setChurchName] = useState("")
   const [message, setMessage] = useState("")
+  const [debug, setDebug] = useState("")
+
+    useEffect(() => {
+    async function loadRole() {
+      const profile = await getCurrentUserProfile()
+
+      if (!profile || profile.role !== "superuser") {
+        window.location.href = "/dashboard"
+        return
+      }
+
+      setCheckingRole(false)
+    }
+
+    loadRole()
+  }, [])
 
   async function addChurch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -24,6 +43,10 @@ export default function ChurchesPage() {
 
     setChurchName("")
     setMessage("Church added successfully!")
+  }
+  
+  if (checkingRole) {
+    return <main className="p-6">Checking permissions...</main>
   }
 
   return (
