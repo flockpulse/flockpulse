@@ -82,7 +82,8 @@ if (!member) {
       setHasCheckedIn(false)
       return
     }
-
+    const isVisitor = member.status === "Visitor"
+const isFirstVisit = (member.attendance_count || 0) === 0
     const todayStart = new Date()
 todayStart.setHours(0, 0, 0, 0)
 
@@ -140,14 +141,27 @@ if (member.status === "Visitor" && (member.attendance_count || 0) === 0) {
     },
   ])
 
+if (isVisitor && isFirstVisit) {
   setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
-  return
+} else if (isVisitor && !isFirstVisit) {
+  setMessage(`Welcome back ${member.full_name}!`)
+} else {
+  setMessage(`${member.full_name} checked in successfully!`)
 }
 
-setMessage(`${member.full_name} checked in successfully!`)
-    setInput("")
-  }
-
+if (isVisitor && isFirstVisit && member.phone) {
+  await fetch("/api/send-visitor-sms", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      phone: member.phone,
+      name: member.full_name,
+      churchName: "FlockPulse Demo Church",
+    }),
+  })
+}
   useEffect(() => {
     const idFromUrl = searchParams.get("member")
 
