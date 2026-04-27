@@ -42,7 +42,7 @@ export default function LiveAttendancePage() {
   const members = checkIns.filter((c) => c.members?.status === "Member").length
 
   return (
-    <main className="min-h-screen p-8 space-y-8 bg-black text-white">
+    <main className="min-h-screen p-8 space-y-8 bg-white text-black">
       <h1 className="text-5xl font-bold">Live Attendance</h1>
 
       <div className="grid gap-6 md:grid-cols-3">
