@@ -1,93 +1,86 @@
 "use client"
-import { getCurrentUserProfile } from "@/lib/getCurrentUserProfile"
-import RequireAuth from "@/components/RequireAuth"
-import { useState, useEffect } from "react"
+
+import { useState } from "react"
 import { supabase } from "@/lib/supabase"
+import { useChurch } from "@/lib/churchContext"
 import { nanoid } from "nanoid"
-import { getUserChurchId } from "@/lib/getUserChurch"
 
 export default function MembersPage() {
+  const { selectedChurchId } = useChurch()
+
   const [fullName, setFullName] = useState("")
-  const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [status, setStatus] = useState("Visitor")
-  const [successMessage, setSuccessMessage] = useState("")
-const [selectedChurchId, setSelectedChurchId] = useState("")
+  const [message, setMessage] = useState("")
 
-useEffect(() => {
-  async function loadAccess() {
-    const currentProfile = await getCurrentUserProfile()
-    setProfile(currentProfile)
+  async function addMember(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setMessage("")
 
-    if (currentProfile?.role === "superuser") {
-      const { data } = await supabase.from("churches").select("*")
-      setChurches(data || [])
-    } else {
-      setSelectedChurchId(currentProfile?.church_id || "")
+    if (!selectedChurchId) {
+      setMessage("Please select a church from the top dropdown.")
+      return
     }
+
+    const memberId = `FP-${nanoid(6).toUpperCase()}`
+
+    const { error } = await supabase.from("members").insert([
+      {
+        church_id: selectedChurchId,
+        full_name: fullName,
+        email,
+        phone,
+        status,
+        member_id: memberId,
+      },
+    ])
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setFullName("")
+    setEmail("")
+    setPhone("")
+    setStatus("Visitor")
+    setMessage("Member saved successfully!")
   }
 
-  loadAccess()
-}, [])
-
-async function addMember(e: React.FormEvent) {
-  e.preventDefault()
-
-  const memberId = `FP-${nanoid(6).toUpperCase()}`
-if (!selectedChurchId) {
-  setSuccessMessage("Please select a church first.")
-  return
-}
-  const { error } = await supabase.from("members").insert([
-    {
-      church_id: selectedChurchId,
-      full_name: fullName,
-      email,
-      phone,
-      status,
-      member_id: memberId,
-    },
-  ])
-
-  if (error) {
-    setSuccessMessage("Something went wrong. Please try again.")
-    return
-  }
-
-  setFullName("")
-  setEmail("")
-  setPhone("")
-  setStatus("Visitor")
-  setSuccessMessage("Member saved successfully!")
-}
   return (
-    <RequireAuth>
-    <main className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Members</h1>
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <form
+        onSubmit={addMember}
+        className="w-full max-w-md space-y-4 border rounded-xl p-6"
+      >
+        <h1 className="text-2xl font-bold">Add Member / Visitor</h1>
 
-      <form onSubmit={addMember} className="space-y-3 border p-4 rounded-lg">
         <input
-          className="border p-2 w-full"
+          className="w-full border rounded-lg p-3"
           placeholder="Full Name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
         />
+
         <input
-            className="border p-2 w-full"
-            placeholder="Mobile Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          className="border p-2 w-full"
-          placeholder="Email"
+          className="w-full border rounded-lg p-3"
+          type="email"
+          placeholder="Email (optional)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
+        <input
+          className="w-full border rounded-lg p-3"
+          placeholder="Mobile Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+
         <select
-          className="border p-2 w-full"
+          className="w-full border rounded-lg p-3"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -95,15 +88,14 @@ if (!selectedChurchId) {
           <option value="Member">Member</option>
         </select>
 
-        <button className="bg-black text-white p-2 w-full">
-          Add Member
+        <button className="w-full rounded-lg p-3 bg-black text-white">
+          Save Member
         </button>
-      </form>
 
-      {successMessage && (
-  <p className="text-green-600 font-medium">{successMessage}</p>
-)}
+        {message && (
+          <p className="text-sm font-medium text-center">{message}</p>
+        )}
+      </form>
     </main>
-    </RequireAuth>
   )
 }
