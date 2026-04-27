@@ -1,37 +1,27 @@
 "use client"
 
-import { useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 
 export default function CheckInPage() {
+  const searchParams = useSearchParams()
   const [memberId, setMemberId] = useState("")
   const [message, setMessage] = useState("")
 
-  async function handleCheckIn(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setMessage("")
+  async function checkIn(idToCheck: string) {
+    setMessage("Checking in...")
 
     const { data: member, error: memberError } = await supabase
       .from("members")
       .select("*")
-      .eq("member_id", memberId.trim())
+      .eq("member_id", idToCheck.trim())
       .single()
 
     if (memberError || !member) {
       setMessage("Member not found.")
       return
     }
-
-    const searchParams = useSearchParams()
-
-useEffect(() => {
-  const scannedMemberId = searchParams.get("member")
-  if (scannedMemberId) {
-    setMemberId(scannedMemberId)
-  }
-}, [searchParams])
 
     const { error: attendanceError } = await supabase.from("attendance").insert([
       {
@@ -58,6 +48,20 @@ useEffect(() => {
     setMessage(`${member.full_name} checked in successfully!`)
     setMemberId("")
   }
+
+  async function handleCheckIn(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    await checkIn(memberId)
+  }
+
+  useEffect(() => {
+    const scannedMemberId = searchParams.get("member")
+
+    if (scannedMemberId) {
+      setMemberId(scannedMemberId)
+      checkIn(scannedMemberId)
+    }
+  }, [searchParams])
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
