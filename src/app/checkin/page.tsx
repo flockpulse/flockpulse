@@ -118,15 +118,33 @@ if (existing) {
       return
     }
 
-    await supabase
-      .from("members")
-      .update({
-        attendance_count: (member.attendance_count || 0) + 1,
-        last_attendance: new Date().toISOString(),
-      })
-      .eq("id", member.id)
+await supabase
+  .from("members")
+  .update({
+    attendance_count: (member.attendance_count || 0) + 1,
+    last_attendance: new Date().toISOString(),
+  })
+  .eq("id", member.id)
 
-    setMessage(`${member.full_name} checked in successfully!`)
+if (member.status === "Visitor" && (member.attendance_count || 0) === 0) {
+  const dueDate = new Date()
+  dueDate.setDate(dueDate.getDate() + 1)
+
+  await supabase.from("follow_ups").insert([
+    {
+      church_id: member.church_id,
+      member_id: member.id,
+      reason: "First-time visitor follow-up",
+      status: "Open",
+      due_date: dueDate.toISOString().split("T")[0],
+    },
+  ])
+
+  setMessage(`Welcome ${member.full_name}! First-time visitor checked in.`)
+  return
+}
+
+setMessage(`${member.full_name} checked in successfully!`)
     setInput("")
   }
 
