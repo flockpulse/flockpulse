@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { Html5QrcodeScanner } from "html5-qrcode"
+import RequireAuth from "@/components/RequireAuth"
 
 export default function ScanPage() {
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState("Ready to scan.")
 
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -30,13 +31,17 @@ export default function ScanPage() {
   }, [])
 
   return (
-    <main className="p-6 space-y-4">
-      <h1 className="text-3xl font-bold">Scan Check-In QR</h1>
-      <p>Allow camera access, then scan a member QR code.</p>
+    <RequireAuth>
+      <main className="p-6 space-y-4">
+        <h1 className="text-3xl font-bold">Scan QR</h1>
+        <p className="text-sm">
+          Scan a member QR code to check them in.
+        </p>
 
-      <div id="reader" className="max-w-md" />
+        <div id="reader" className="max-w-md" />
 
-      {message && <p>{message}</p>}
-    </main>
+        {message && <p className="text-sm font-medium">{message}</p>}
+      </main>
+    </RequireAuth>
   )
 }
