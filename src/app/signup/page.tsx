@@ -20,78 +20,78 @@ export default function SignupPage() {
     e.preventDefault()
     setMessage("Creating account...")
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      // 🔐 Create Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
 
-    if (authError) {
-      setMessage(authError.message)
-      return
-    }
+      if (authError) throw authError
 
-    const { data: churchData, error: churchError } = await supabase
-      .from("churches")
-      .insert([
+      // ⛪ Create church
+      const { data: churchData, error: churchError } = await supabase
+        .from("churches")
+        .insert([
+          {
+            name: churchName,
+            pastor_name: pastorName,
+            email,
+            phone,
+            address,
+            city,
+            state: stateName,
+            zip_code: zipCode,
+          },
+        ])
+        .select()
+        .single()
+
+      if (churchError) throw churchError
+
+      // 👤 Create user profile
+      const { error: userError } = await supabase.from("users").insert([
         {
-          name: churchName,
-          pastor_name: pastorName,
+          id: authData.user?.id,
+          name: adminName,
           email,
-          phone,
-          address,
-          city,
-          state: stateName,
-          zip_code: zipCode,
+          role: "admin",
+          church_id: churchData.id,
         },
       ])
-      .select()
-      .single()
 
-    if (churchError) {
-      setMessage(churchError.message)
-      return
+      if (userError) throw userError
+
+      setMessage("Redirecting to payment...")
+
+      // 💳 Stripe checkout
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          churchId: churchData.id,
+          email,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Checkout failed")
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error("No checkout URL returned")
+      }
+    } catch (error: any) {
+      setMessage(error.message)
     }
+  }
 
-    const { error: userError } = await supabase.from("users").insert([
-      {
-        id: authData.user?.id,
-        name: adminName,
-        email,
-        role: "admin",
-        church_id: churchData.id,
-      },
-    ])
-
-    if (userError) {
-      setMessage(userError.message)
-      return
-    }
-
-    setMessage("Account created. Redirecting to payment...")
-
-    const checkoutResponse = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        churchId: churchData.id,
-        email,
-      }),
-    })
-
-    const checkoutData = await checkoutResponse.json()
-
-if (!checkoutResponse.ok) {
-  setMessage(checkoutData.error || "Payment checkout failed.")
-  return
-}
-
-if (checkoutData.url) {
-  window.location.href = checkoutData.url
-} else {
-  setMessage("No Stripe checkout URL returned.")
-}
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <form
@@ -126,7 +126,7 @@ if (checkoutData.url) {
         <input
           className="w-full border rounded-lg p-3"
           type="email"
-          placeholder="Admin Email / Login Email"
+          placeholder="Admin Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -135,7 +135,7 @@ if (checkoutData.url) {
         <input
           className="w-full border rounded-lg p-3"
           type="password"
-          placeholder="Create Password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -143,14 +143,14 @@ if (checkoutData.url) {
 
         <input
           className="w-full border rounded-lg p-3"
-          placeholder="Church Phone"
+          placeholder="Phone"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
 
         <input
           className="w-full border rounded-lg p-3"
-          placeholder="Church Address"
+          placeholder="Address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
@@ -178,11 +178,11 @@ if (checkoutData.url) {
           />
         </div>
 
-        <button className="w-full rounded-lg p-3 bg-black text-white">
+        <button className="w-full bg-black text-white p-3 rounded-lg">
           Create Account + Continue to Payment
         </button>
 
-        {message && <p className="text-sm font-medium">{message}</p>}
+        {message && <p className="text-sm">{message}</p>}
       </form>
     </main>
   )
