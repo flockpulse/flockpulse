@@ -20,7 +20,11 @@ export default function AuthHeader() {
 
       setEmail(user?.email || null)
 
-      if (!user) return
+      if (!user) {
+        setProfile(null)
+        setSelectedChurchId("")
+        return
+      }
 
       const currentProfile = await getCurrentUserProfile()
       setProfile(currentProfile)
@@ -42,6 +46,7 @@ export default function AuthHeader() {
 
   async function logout() {
     await supabase.auth.signOut()
+    setSelectedChurchId("")
     window.location.href = "/login"
   }
 
@@ -65,6 +70,10 @@ export default function AuthHeader() {
               </option>
             ))}
           </select>
+        )}
+
+        {profile?.role !== "superuser" && profile?.church_id && (
+          <span className="text-sm opacity-70">Church Account</span>
         )}
 
         {email ? (
