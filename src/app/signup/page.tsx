@@ -49,16 +49,21 @@ export default function SignupPage() {
 
       if (churchError) throw churchError
 
-      // 👤 Create user profile
-      const { error: userError } = await supabase.from("users").insert([
-        {
-          id: authData.user?.id,
-          name: adminName,
-          email,
-          role: "admin",
-          church_id: churchData.id,
-        },
-      ])
+      if (!authData.user?.id) {
+  setMessage("User account was not created. Please try again.")
+  return
+}
+
+const { error: userError } = await supabase.from("users").insert([
+  {
+    id: authData.user.id,
+    name: adminName,
+    email,
+    role: "admin",
+    church_id: churchData.id,
+  },
+])
+
 
       if (userError) throw userError
 
