@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { useChurch } from "@/lib/churchContext"
 
 export default function DashboardPage() {
-  const { selectedChurchId } = useChurch()
+  const { selectedChurchId, churchLoading } = useChurch()
 
   const [subscriptionStatus, setSubscriptionStatus] = useState("")
   const [checkingSubscription, setCheckingSubscription] = useState(true)
@@ -152,7 +152,13 @@ export default function DashboardPage() {
       </RequireAuth>
     )
   }
-
+if (churchLoading) {
+  return (
+    <RequireAuth>
+      <main className="p-6">Loading church...</main>
+    </RequireAuth>
+  )
+}
   if (!selectedChurchId) {
     return (
       <RequireAuth>
