@@ -21,7 +21,6 @@ export default function SignupPage() {
     setMessage("Creating account...")
 
     try {
-      // 🔐 Create Auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -29,51 +28,49 @@ export default function SignupPage() {
 
       if (authError) throw authError
 
-const trialEnds = new Date()
-trialEnds.setDate(trialEnds.getDate() + 7)
+      if (!authData.user?.id) {
+        setMessage("User account was not created. Please try again.")
+        return
+      }
 
-const { data: churchData } = await supabase
-  .from("churches")
-  .insert([
-    {
-      name: churchName,
-      pastor_name: pastorName,
-      email,
-      phone,
-      address,
-      city,
-      state: stateName,
-      zip_code: zipCode,
-      subscription_status: "trialing",
-      trial_ends_at: trialEnds.toISOString(),
-    },
-  ])
+      const trialEnds = new Date()
+      trialEnds.setDate(trialEnds.getDate() + 7)
+
+      const { data: churchData, error: churchError } = await supabase
+        .from("churches")
+        .insert([
+          {
+            name: churchName,
+            pastor_name: pastorName,
+            email,
+            phone,
+            address,
+            city,
+            state: stateName,
+            zip_code: zipCode,
+            subscription_status: "trialing",
+            trial_ends_at: trialEnds.toISOString(),
+          },
+        ])
         .select()
         .single()
 
       if (churchError) throw churchError
 
-      if (!authData.user?.id) {
-  setMessage("User account was not created. Please try again.")
-  return
-}
-
-const { error: userError } = await supabase.from("users").insert([
-  {
-    id: authData.user.id,
-    name: adminName,
-    email,
-    role: "admin",
-    church_id: churchData.id,
-  },
-])
-
+      const { error: userError } = await supabase.from("users").insert([
+        {
+          id: authData.user.id,
+          name: adminName,
+          email,
+          role: "admin",
+          church_id: churchData.id,
+        },
+      ])
 
       if (userError) throw userError
 
-      setMessage("Redirecting to payment...")
+      setMessage("Account created. Redirecting to payment...")
 
-      // 💳 Stripe checkout
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
@@ -152,14 +149,14 @@ const { error: userError } = await supabase.from("users").insert([
 
         <input
           className="w-full border rounded-lg p-3"
-          placeholder="Phone"
+          placeholder="Church Phone"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
 
         <input
           className="w-full border rounded-lg p-3"
-          placeholder="Address"
+          placeholder="Church Address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
@@ -188,10 +185,10 @@ const { error: userError } = await supabase.from("users").insert([
         </div>
 
         <button className="w-full bg-black text-white p-3 rounded-lg">
-          Create Account + Continue to Payment
+          Start 7-Day Trial + Continue to Payment
         </button>
 
-        {message && <p className="text-sm">{message}</p>}
+        {message && <p className="text-sm font-medium">{message}</p>}
       </form>
     </main>
   )
