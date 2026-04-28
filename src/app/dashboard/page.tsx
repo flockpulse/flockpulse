@@ -6,14 +6,14 @@ import { supabase } from "@/lib/supabase"
 import { useChurch } from "@/lib/churchContext"
 
 export default function DashboardPage() {
-  const { selectedChurchId, churchLoading } = useChurch()
+  const { selectedChurchId } = useChurch()
 
   const [subscriptionStatus, setSubscriptionStatus] = useState("")
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
   const [checkingSubscription, setCheckingSubscription] = useState(true)
 
   const [totalVisitors, setTotalVisitors] = useState(0)
   const [totalMembers, setTotalMembers] = useState(0)
-
   const [weekCheckIns, setWeekCheckIns] = useState(0)
   const [lastWeekCheckIns, setLastWeekCheckIns] = useState(0)
 
@@ -24,6 +24,11 @@ export default function DashboardPage() {
     return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`
   }
 
+  const isTrialActive =
+    subscriptionStatus === "trialing" &&
+    trialEndsAt &&
+    new Date(trialEndsAt) > new Date()
+
   async function startCheckout() {
     const {
       data: { user },
@@ -33,9 +38,7 @@ export default function DashboardPage() {
 
     const response = await fetch("/api/create-checkout-session", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         churchId: selectedChurchId,
         email: user.email,
@@ -62,12 +65,8 @@ export default function DashboardPage() {
 
     const response = await fetch("/api/create-portal-session", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        customerId: data.stripe_customer_id,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: data.stripe_customer_id }),
     })
 
     const result = await response.json()
@@ -85,11 +84,12 @@ export default function DashboardPage() {
 
     const { data } = await supabase
       .from("churches")
-      .select("subscription_status")
+      .select("subscription_status, trial_ends_at")
       .eq("id", selectedChurchId)
       .single()
 
     setSubscriptionStatus(data?.subscription_status || "unpaid")
+    setTrialEndsAt(data?.trial_ends_at || null)
     setCheckingSubscription(false)
   }
 
@@ -152,13 +152,7 @@ export default function DashboardPage() {
       </RequireAuth>
     )
   }
-if (churchLoading) {
-  return (
-    <RequireAuth>
-      <main className="p-6">Loading church...</main>
-    </RequireAuth>
-  )
-}
+
   if (!selectedChurchId) {
     return (
       <RequireAuth>
@@ -169,13 +163,15 @@ if (churchLoading) {
     )
   }
 
-  if (subscriptionStatus !== "active") {
+  if (subscriptionStatus !== "active" && !isTrialActive) {
     return (
       <RequireAuth>
         <main className="min-h-screen flex items-center justify-center p-6">
           <div className="border rounded-xl p-6 text-center space-y-4">
             <h1 className="text-xl font-bold">Subscription Required</h1>
-
+            <p className="text-sm">
+              Your trial has ended. Subscribe to continue using FlockPulse.
+            </p>
             <button
               onClick={startCheckout}
               className="bg-black text-white px-4 py-2 rounded-lg"
@@ -192,7 +188,15 @@ if (churchLoading) {
     <RequireAuth>
       <main className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
+          <div>
+            <h1 className="text-3xl font-bold">FlockPulse Dashboard</h1>
+
+            {subscriptionStatus === "trialing" && trialEndsAt && (
+              <p className="text-sm text-orange-600">
+                Trial ends on {new Date(trialEndsAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
 
           <button
             onClick={openBillingPortal}

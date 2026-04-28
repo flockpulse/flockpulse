@@ -29,21 +29,25 @@ export default function SignupPage() {
 
       if (authError) throw authError
 
-      // ⛪ Create church
-      const { data: churchData, error: churchError } = await supabase
-        .from("churches")
-        .insert([
-          {
-            name: churchName,
-            pastor_name: pastorName,
-            email,
-            phone,
-            address,
-            city,
-            state: stateName,
-            zip_code: zipCode,
-          },
-        ])
+const trialEnds = new Date()
+trialEnds.setDate(trialEnds.getDate() + 7)
+
+const { data: churchData } = await supabase
+  .from("churches")
+  .insert([
+    {
+      name: churchName,
+      pastor_name: pastorName,
+      email,
+      phone,
+      address,
+      city,
+      state: stateName,
+      zip_code: zipCode,
+      subscription_status: "trialing",
+      trial_ends_at: trialEnds.toISOString(),
+    },
+  ])
         .select()
         .single()
 
