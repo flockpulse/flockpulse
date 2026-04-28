@@ -9,7 +9,6 @@ export default function AuthHeader() {
   const [email, setEmail] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [churches, setChurches] = useState<any[]>([])
-
   const { selectedChurchId, setSelectedChurchId } = useChurch()
 
   useEffect(() => {
@@ -27,6 +26,7 @@ export default function AuthHeader() {
       }
 
       const currentProfile = await getCurrentUserProfile()
+      console.log("CURRENT PROFILE:", currentProfile)
       setProfile(currentProfile)
 
       if (currentProfile?.role === "superuser") {
